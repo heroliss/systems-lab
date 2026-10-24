@@ -17,10 +17,38 @@ internal static class Program
                     throw new InvalidOperationException(name);
                 checks.Add(name);
             }
+            void Reject(Action action, string name)
+            {
+                bool rejected = false;
+                try { action(); }
+                catch (ArgumentException) { rejected = true; }
+                Check(rejected, name);
+            }
             Check(Native.Paging([7, 0, 1, 2, 0, 3, 0, 4, 2, 3, 0, 3, 2], 3).GetProperty("results")[2].GetProperty("faults").GetInt32() == 7, "PInvoke paging OPT");
             Check(Native.Devices([(1, 0), (2, 1)]).GetProperty("granted").Ints().SequenceEqual([1, 0]), "PInvoke hierarchy");
             Check(Native.Primes(1000000, 0, CancellationToken.None).GetProperty("count").GetInt32() == 78498, "PInvoke million sieve");
             Check(Native.Bank([7, 5, 3, 3, 2, 2, 9, 0, 2, 2, 2, 2, 4, 3, 3], [0, 1, 0, 2, 0, 0, 3, 0, 2, 2, 1, 1, 0, 0, 2], [3, 3, 2]).GetProperty("safe").GetBoolean(), "PInvoke banker safety");
+            int[] maximum = [3, 3, 3], allocation = [0, 0, 0], available = [3, 3, 3];
+            Check(Native.Bank(maximum, allocation, available, 0, [1, 0, 2]).GetProperty("granted").GetBoolean(), "PInvoke banker request with exact dimensions");
+            Reject(() => Native.Bank(maximum, allocation, available, 0), "Managed boundary rejects missing request");
+            Reject(() => Native.Bank(maximum, allocation, available, 0, []), "Managed boundary rejects empty request");
+            Reject(() => Native.Bank(maximum, allocation, available, 0, [1]), "Managed boundary rejects short request");
+            Reject(() => Native.Bank(maximum, allocation, available, 0, [1, 0, 0, 0]), "Managed boundary rejects long request");
+            Reject(() => Native.Bank(maximum, [0], available), "Managed boundary rejects short allocation");
+            Reject(() => Native.Bank(maximum, [0, 0, 0, 0], available), "Managed boundary rejects long allocation");
+            Reject(() => Native.Bank([3, 3], [0, 0], available), "Managed boundary rejects incomplete matrix row");
+            Reject(() => Native.Bank([], [], []), "Managed boundary rejects empty resources");
+            Reject(() => Native.Bank(maximum, allocation, available, 1, [0, 0, 0]), "Managed boundary rejects invalid process");
+            Reject(() => Native.Bank(null!, allocation, available), "Managed boundary rejects null maximum");
+            Reject(() => Native.Bank(maximum, null!, available), "Managed boundary rejects null allocation");
+            Reject(() => Native.Bank(maximum, allocation, null!), "Managed boundary rejects null resources");
+            Reject(() => Native.Paging(null!, 3), "Managed boundary rejects null pages");
+            Reject(() => Native.Paging([], 3), "Managed boundary rejects empty pages");
+            Reject(() => Native.Paging([1], 33), "Managed boundary rejects excessive page frames");
+            Reject(() => Native.Devices(null!), "Managed boundary rejects null device queue");
+            Reject(() => Native.Devices([(1, 0), (1, 1)]), "Managed boundary rejects duplicate device process");
+            Reject(() => Native.Devices([(1, 4)]), "Managed boundary rejects invalid device");
+            Check(Native.Devices([]).GetProperty("granted").Ints().Length == 0, "PInvoke empty device queue");
             File.WriteAllText(output, JsonSerializer.Serialize(new
             {
                 passed = true,
