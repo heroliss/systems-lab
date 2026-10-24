@@ -15,7 +15,7 @@
 
 ## 运行
 
-Windows 10/11 x64，完整解压后运行 `Liss.SystemsLab.exe`。自包含包附带 .NET 桌面运行时，`SystemsCore.dll` 必须与 EXE 保持在同一目录，无需安装 SDK、Qt 或 Visual Studio。
+Windows 10/11 x64，完整解压后运行 `Liss.SystemsLab.exe`。自包含单文件程序附带 .NET 桌面运行时和原生算法核心，运行时自动提取所需组件，无需安装 SDK、Qt 或 Visual Studio。
 
 - `--showcase paging`、`devices`、`banker`、`primes`：直接打开相应工作区；质数场景会实际计算一百万以内的质数。
 - 银行家示例中 P1 请求 `1 0 2` 可安全分配；恢复初始矩阵后 P4 请求 `3 3 0` 会被安全检查拒绝。
